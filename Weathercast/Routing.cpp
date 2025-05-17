@@ -1,160 +1,204 @@
 #include <iostream>
+#include <string>
 #include <restinio/all.hpp>
 #include <json_dto/pub.hpp>
 
+// For convenience
 using namespace std;
 
-struct weathercast_t
+// Define the structure for Place (Sted)
+struct place_t
 {
-	weathercast_t() = default;
+    string m_name; // Navn
+    double m_lat;  // Lat
+    double m_lon;  // Lon
 
-	weathercast_t(
-		string ID,
-		Date Date 
-        Time Time
-        string Place 
-        string title )
-		:	m_author{ move( author ) }
-		,	m_title{ move( title ) }
-	{}
+    place_t() = default;
 
-	template < typename JSON_IO >
-	void
-	json_io( JSON_IO & io )
-	{
-		io
-			& json_dto::mandatory( "author", m_author )
-			& json_dto::mandatory( "title", m_title );
-	}
+    place_t(string name, double lat, double lon)
+        : m_name{move(name)}, m_lat{lat}, m_lon{lon}
+    {}
 
-	string m_author;
-	string m_title;
+    template <typename JSON_IO>
+    void json_io(JSON_IO &io)
+    {
+        io & json_dto::mandatory("Navn", m_name)
+           & json_dto::mandatory("Lat", m_lat)
+           & json_dto::mandatory("Lon", m_lon);
+    }
 };
 
-struct locaation
+// Define the structure for DateTime
+struct dateTime_t
 {
-	
-}
+    string m_date; // Dato
+    string m_time; // Klokkeslæt
 
-using book_collection_t = vector< book_t >;
+    dateTime_t() = default;
+
+    dateTime_t(string date, string time)
+        : m_date{move(date)}, m_time{move(time)}
+    {}
+
+    template <typename JSON_IO>
+    void json_io(JSON_IO &io)
+    {
+        io & json_dto::mandatory("Dato", m_date)
+           & json_dto::mandatory("Klokkeslæt", m_time);
+    }
+};
+
+// Define the structure for Weathercast data
+struct weathercast_t
+{
+    string m_id;
+    dateTime_t m_dateTime;  // Dato og tid
+    place_t m_place;        // Sted
+    double m_temperature;   // Temperatur
+    int m_humidity;         // Luftfugtighed
+
+    weathercast_t() = default;
+
+    weathercast_t(
+        string id,
+        dateTime_t dateTime, // Corrected: comma instead of semicolon
+        place_t place,
+        double temperature,
+        int humidity)
+        : m_id{move(id)},
+          m_dateTime{move(dateTime)},
+          m_place{move(place)},
+          m_temperature{temperature},
+          m_humidity{humidity}
+    {}
+
+    template <typename JSON_IO>
+    void json_io(JSON_IO &io)
+    {
+        io & json_dto::mandatory("ID", m_id)
+           & json_dto::mandatory("Tidspunkt (dato og klokkeslæt)", m_dateTime)
+           & json_dto::mandatory("Sted", m_place)
+           & json_dto::mandatory("Temperatur", m_temperature)
+           & json_dto::mandatory("Luftfugtighed", m_humidity);
+    }
+};
 
 namespace rr = restinio::router;
 using router_t = rr::express_router_t<>;
 
-class books_handler_t
+class weather_handler_t
 {
-public :
-	explicit books_handler_t( book_collection_t & books )
-		:	m_books( books )
-	{}
+public:
+    explicit weather_handler_t(weathercast_t &weather_data)
+        : m_weather_data(weather_data)
+    {}
 
-	books_handler_t( const books_handler_t & ) = delete;
-	books_handler_t( books_handler_t && ) = delete;
+    weather_handler_t(const weather_handler_t &) = delete;
+    weather_handler_t(weather_handler_t &&) = delete;
 
-	auto on_books_list(
-		const restinio::request_handle_t& req, rr::route_params_t ) const
-	{
-		auto resp = init_resp( req->create_response() );
+    auto on_weather_data_get(
+        const restinio::request_handle_t& req, rr::route_params_t /*params*/) const
+    {
+        auto resp = init_json_resp(req->create_response());
+        resp.set_body(json_dto::to_json(m_weather_data));
+        return resp.done();
+    }
 
-		resp.set_body(
-			"Book collection (book count: " +
-				to_string( m_books.size() ) + ")\n" );
+    auto on_root_get(
+        const restinio::request_handle_t& req, rr::route_params_t /*params*/) const
+    {
+        auto resp = init_json_resp(req->create_response(restinio::status_ok()));
+        resp.set_body(R"({"message": "Welcome to the Weather API! Access /weather for data."})");
+        return resp.done();
+    }
 
-		for( size_t i = 0; i < m_books.size(); ++i )
-		{
-			resp.append_body( to_string( i + 1 ) + ". " );
-			const auto & b = m_books[ i ];
-			resp.append_body( b.m_title + "[" + b.m_author + "]\n" );
-		}
+private:
+    weathercast_t &m_weather_data;
 
-		return resp.done();
-	}
-
-private :
-	book_collection_t & m_books;
-
-	template < typename RESP >
-	static RESP
-	init_resp( RESP resp )
-	{
-		resp
-			.append_header( "Server", "RESTinio sample server /v.0.6" )
-			.append_header_date_field()
-			.append_header( "Content-Type", "text/plain; charset=utf-8" );
-
-		return resp;
-	}
-
-	template < typename RESP >
-	static void
-	mark_as_bad_request( RESP & resp )
-	{
-		resp.header().status_line( restinio::status_bad_request() );
-	}
+    template <typename RESP>
+    static RESP
+    init_json_resp(RESP resp)
+    {
+        resp.append_header("Server", "RESTinio Weather API /v.0.1")
+            .append_header_date_field()
+            .append_header("Content-Type", "application/json; charset=utf-8");
+        return resp;
+    }
 };
 
-auto server_handler( weathercast_t & weathercast )
+auto server_handler(weathercast_t &weather_data_ref)
 {
-	auto router = make_unique< router_t >();
-	auto handler = make_shared< weathercast_t >( ref(weathercast) );
+    auto router = std::make_unique<router_t>();
+    auto handler = std::make_shared<weather_handler_t>(std::ref(weather_data_ref));
 
-	auto by = [&]( auto method ) {
-		using namespace placeholders;
-		return bind( method, handler, _1, _2 );
-	};
+    auto by = [&](auto method) {
+        using namespace std::placeholders;
+        return std::bind(method, handler, _1, _2);
+    };
 
-	auto method_not_allowed = []( const auto & req, auto ) {
-			return req->create_response( restinio::status_method_not_allowed() )
-					.connection_close()
-					.done();
-		};
+    auto method_not_allowed = [](const auto &req, auto) {
+        return req->create_response(restinio::status_method_not_allowed())
+            .connection_close()
+            .done();
+    };
 
-	// Handlers for '/' path.
-	router->http_get( "/", by( &weathercast_t::on_books_list ) );
-    router->http_get( "/", by( &weathercast_t::on_books_list ) );
-    router->http_get( "/", by( &weathercast_t::on_books_list ) );
-    
+    // Handler for GET /weather
+    router->http_get("/weather", by(&weather_handler_t::on_weather_data_get));
+    // Disable all other methods for '/weather'
+    router->add_handler(
+        restinio::router::none_of_methods(restinio::http_method_get()),
+        "/weather",
+        method_not_allowed);
 
-	// Disable all other methods for '/'.
-	router->add_handler(
-			restinio::router::none_of_methods(
-					restinio::http_method_get() ),
-			"/", method_not_allowed );
+    // Handler for GET /
+    router->http_get("/", by(&weather_handler_t::on_root_get));
+    // Disable all other methods for '/'
+    router->add_handler(
+        restinio::router::none_of_methods(restinio::http_method_get()),
+        "/",
+        method_not_allowed);
 
-	return router;
+    return router;
 }
 
 int main()
 {
-	using namespace chrono;
+    using namespace chrono;
 
-	try
-	{
-		using traits_t =
-			restinio::traits_t<
-				restinio::asio_timer_manager_t,
-				restinio::single_threaded_ostream_logger_t,
-				router_t >;
+    try
+    {
+        // Hardcoded data
+        place_t aarhus_n_place{"Aarhus N", 13.692, 19.438};
+        dateTime_t current_date_time{"20240415", "10:15"};
+        
+        weathercast_t hardcoded_weather_data{
+            "1",                     // ID
+            current_date_time,       // DateTime object
+            aarhus_n_place,          // Place
+            13.1,                    // Temperature
+            70                       // Humidity
+        };
 
-		book_collection_t book_collection{
-			{ "Agatha Christie", "Murder on the Orient Express" },
-			{ "Agatha Christie", "Sleeping Murder" },
-			{ "B. Stroustrup", "The C++ Programming Language" }
-		};
+        using traits_t =
+            restinio::traits_t<
+                restinio::asio_timer_manager_t,
+                restinio::single_threaded_ostream_logger_t,
+                router_t>;
 
-		restinio::run(
-			restinio::on_this_thread< traits_t >()
-				.address( "localhost" )
-				.request_handler( server_handler( book_collection ) )
-				.read_next_http_message_timelimit( 10s )
-				.write_http_response_timelimit( 1s )
-				.handle_request_timeout( 1s ) );
-	}
-	catch( const exception & ex )
-	{
-		cerr << "Error: " << ex.what() << endl;
-		return 1;
-	}
+        restinio::run(
+            restinio::on_this_thread<traits_t>()
+                .address("localhost")
+                .port(8080)
+                .request_handler(server_handler(hardcoded_weather_data))
+                .read_next_http_message_timelimit(10s)
+                .write_http_response_timelimit(1s)
+                .handle_request_timeout(1s));
+    }
+    catch (const exception &ex)
+    {
+        cerr << "Error: " << ex.what() << endl;
+        return 1;
+    }
 
-	return 0;
+    return 0;
 }
