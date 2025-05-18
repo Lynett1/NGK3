@@ -97,7 +97,7 @@ public:
     weather_handler_t(weather_handler_t &&) = delete;
 
     auto on_weather_data_get(
-        const restinio::request_handle_t& req, rr::route_params_t /*params*/) const
+        const restinio::request_handle_t& req, rr::route_params_t ) const
     {
         auto resp = init_json_resp(req->create_response());
         resp.set_body(json_dto::to_json(m_weather_data));
@@ -105,7 +105,7 @@ public:
     }
 
     auto on_root_get(
-        const restinio::request_handle_t& req, rr::route_params_t /*params*/) const
+        const restinio::request_handle_t& req, rr::route_params_t ) const
     {
         auto resp = init_json_resp(req->create_response(restinio::status_ok()));
         resp.set_body(R"({"message": "Welcome to the Weather API! Access /weather for data."})");
