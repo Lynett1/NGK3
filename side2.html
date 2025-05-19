@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vejr API Klient</title>
+<link href="https://unpkg.com/tabulator-tables@6.2.0/dist/css/tabulator.min.css" rel="stylesheet">
+</head>
+<body>
+<h1>Vejrdata Håndtering</h1>
+
+    <h2>Opret ny vejrdata</h2>
+    <form id="createWeatherForm">
+        <label for="post_date">Dato (YYYYMMDD):</label><br>
+        <input type="text" id="post_date" name="Dato" value="20250520"><br>
+        <label for="post_time">Klokkeslæt (HH:MM):</label><br>
+        <input type="text" id="post_time" name="Klokkeslæt" value="12:00"><br>
+        <label for="post_place_name">Sted Navn:</label><br>
+        <input type="text" id="post_place_name" name="Navn" value=""><br>
+        <label for="post_lat">Latitude: (XX,XX)</label><br>
+        <input type="number" step="any" id="post_lat" name="Lat" value=""><br>
+        <label for="post_lon">Longitude: (XX,XX)</label><br>
+        <input type="number" step="any" id="post_lon" name="Lon" value=""><br>
+        <label for="post_temperature">Temperatur: (XX.XX)</label><br>
+        <input type="number" step="any" id="post_temperature" name="Temperatur" value=""><br>
+        <label for="post_humidity">Luftfugtighed: (XX)</label><br>
+        <input type="number" id="post_humidity" name="Luftfugtighed" value=""><br><br>
+        <button type="button" onclick="postWeatherData()">Opret Vejrdata</button>
+    </form>
+
+    <hr>
+
+    <h2>Opdater eksisterende vejrdata</h2>
+    <form id="updateWeatherForm">
+        <label for="put_id">ID for post der skal opdateres:</label><br>
+        <input type="text" id="put_id" name="ID" value=""><br>
+        <label for="put_date">Dato (YYYYMMDD):</label><br>
+        <input type="text" id="put_date" name="Dato" value="20250520"><br>
+        <label for="put_time">Klokkeslæt (HH:MM):</label><br>
+        <input type="text" id="put_time" name="Klokkeslæt" value=""><br>
+        <label for="put_place_name">Sted Navn:</label><br>
+        <input type="text" id="put_place_name" name="Navn" value=""><br>
+        <label for="put_lat">Latitude (XX,XX):</label><br>
+        <input type="number" step="any" id="put_lat" name="Lat" value=""><br>
+        <label for="put_lon">Longitude (XX,XX):</label><br>
+        <input type="number" step="any" id="put_lon" name="Lon" value=""><br>
+        <label for="put_temperature">Temperatur: (XX.XX)</label><br>
+        <input type="number" step="any" id="put_temperature" name="Temperatur" value=""><br>
+        <label for="put_humidity">Luftfugtighed: (XX)</label><br>
+        <input type="number" id="put_humidity" name="Luftfugtighed" value=""><br><br>
+        <button type="button" onclick="putWeatherData()">Opdater Vejrdata</button>
+    </form>
+
+    <hr>
+
+    <h2>Hent vejrdata</h2>
+    <button onclick="getAllWeatherData()">Hent alle vejrdata</button><br><br>
+
+    <label for="get_id">Hent efter ID:</label><br>
+    <input type="text" id="get_id" value="1"><br>
+    <button onclick="getWeatherDataById()">Hent efter ID</button><br><br>
+
+    <label for="get_date">Hent efter Dato (YYYYMMDD):</label><br>
+    <input type="text" id="get_date" value=""><br>
+    <button onclick="getWeatherDataByDate()">Hent efter Dato</button><br><br>
+
+    <button onclick="getLatestThreeWeatherData()">Hent de 3 seneste vejrdata</button><br><br>
+
+    <hr>
+
+    <h2>Modtagne Vejrdata</h2>
+    <div id="weatherDataTable"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://unpkg.com/tabulator-tables@6.2.0/dist/js/tabulator.min.js"></script>
+    <script src="client.js"></script>
+</body>
+</html>
