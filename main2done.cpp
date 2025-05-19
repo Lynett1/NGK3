@@ -87,7 +87,7 @@ struct weathercast_t
     template <typename JSON_IO>
     void json_io(JSON_IO &io)
     {
-        io & json_dto::mandatory("ID", m_id)
+        io & json_dto::optional("ID", m_id, "")
            & json_dto::mandatory("Tidspunkt (dato og klokkeslæt)", m_dateTime)
            & json_dto::mandatory("Sted", m_place)
            & json_dto::mandatory("Temperatur", m_temperature)
@@ -263,7 +263,7 @@ public:
         const restinio::request_handle_t& req, rr::route_params_t /*params*/) const
     {
         auto resp = init_json_resp(req->create_response(restinio::status_ok()));
-        resp.set_body(R"({"message": "Velkommen til Vejr API'et! Tilgå /weather for alle data, /weather/:id for specifikt ID, /weather/date/:date for data på dato, /latest_three for de seneste. Brug POST på /weather og PUT på /weather/:id."})");
+        resp.set_body(R"({"message": "Velkommen til Vejr API'et! Tilgå /weather for alle data, /weather/:id for specifikt ID, /weather/date/:date for data på dato, /latest_three for de seneste tre. Brug POST på /weather og PUT på /weather/:id."})");
         return resp.done();
     }
 
@@ -373,7 +373,7 @@ int main()
         vector<weathercast_t> weather_data_storage;
 
         place_t aarhus_n_place{"Aarhus N", 56.17, 10.22};
-        place_t copenhagen_place{"Copenhagen", 55.67, 12.56};
+        place_t copenhagen_place{"Risskov", 55.67, 12.56};
 
         weather_data_storage.push_back({
             "1",
